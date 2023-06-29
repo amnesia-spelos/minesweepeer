@@ -1,6 +1,6 @@
-# Custom Story Template
+# Amnesia: Minesweeper
 
-A template repository for an Amnesia: The Dark Descent custom story
+_An Amnesia: The Dark Descent custom story where you get to play Minesweeper with a slight twist_
 
 ## 👩‍💼 Legal
 
