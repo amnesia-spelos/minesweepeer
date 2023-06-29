@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.cfg": "xml",
+        "*.lang": "xml",
+        "*.hps": "cpp",
+        "*.ihps": "cpp",
+        "*.shps": "cpp"
+    }
+}

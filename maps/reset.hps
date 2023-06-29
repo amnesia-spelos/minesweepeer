@@ -1,0 +1,4 @@
+void OnEnter()
+{
+	ChangeMap("mine_field.map", "PlayerStartArea_1", "", "");
+}

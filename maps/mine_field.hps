@@ -1,0 +1,299 @@
+Field e;
+Field[] newArray = {e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e, e};
+
+class Grid
+{
+	Point startPosition;
+	float snapSize;
+	int fieldCounter;
+	int gridSize;
+	
+	Field[] fields;
+	
+	Grid(Point statPosition, int gridSize, float snapSize)
+	{	
+		this.startPosition = startPosition;
+		this.snapSize = snapSize;
+		this.fields = newArray;
+		this.gridSize = gridSize;
+		
+		this.fieldCounter = 0;
+		
+		for(int row = 0; row < gridSize; row++)
+		{
+			for(int column = 0; column < gridSize; column++)
+			{
+				this.fields[this.fieldCounter] = Field(RandomBool(), Point(snapSize * column, snapSize * row), "" + row + "," + column + ";");
+				this.fieldCounter++;
+			}
+		}
+	}
+	
+	void ActivateField(string name)
+	{
+		for(int i = 0; i <= this.fieldCounter; i++)
+		{
+			if(this.fields[i].name == name)
+			{
+				this.fields[i].isPressed = true;
+				this.fields[i].Press();
+			}
+		}
+	}
+	
+	void ActivateFieldIfNotMine(string name)
+	{
+		for(int i = 0; i <= this.fieldCounter; i++)
+		{
+			if(this.fields[i].name == name && !this.fields[i].isMine)
+			{
+				this.fields[i].isPressed = true;
+				this.fields[i].Press();
+			}
+		}
+	}
+	
+	bool IsFieldMine(string name)
+	{
+		for(int i = 0; i <= this.fieldCounter; i++)
+		{
+			if(this.fields[i].name == name)
+			{
+				return this.fields[i].isMine;
+			}
+		}
+		return false;
+	}
+	
+	bool GetPlayerWon()
+	{
+		for(int i = 0; i <= this.fieldCounter; i++)
+		{
+			if(!this.fields[i].isMine && !this.fields[i].isPressed)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	void PressAllZeros()
+	{
+		for(int row = 0; row < this.gridSize; row++)
+		{
+			for(int column = 0; column < this.gridSize; column++)
+			{
+				if(GetMineNeighboursCount(row, column) == 0)
+				{
+					this.ActivateFieldIfNotMine("field" + row + "," + column + ";");
+				}
+			}
+		}
+	}
+}
+
+class Point
+{
+	float x;
+	float z;
+	
+	Point(float x, float z)
+	{
+		this.x = x;
+		this.z = z;
+	}
+}
+
+class Field
+{
+	bool isMine;
+	Point location;
+	string name;
+	bool isPressed;
+	
+	Field(bool isMine, Point location, string suffix)
+	{
+		this.isMine = isMine;
+		this.location = location;
+		this.name = "field" + suffix;
+		this.isPressed = false;
+		CreateEntityAtArea(this.name, "Mine.ent", "SpawnArea", false);
+		SetEntityPos(this.name, location.x, 0.0f, location.z);
+		SetEntityPlayerInteractCallback(this.name, "FieldPress", true);
+	}
+	
+	void Press()
+	{
+		if(this.isMine)
+		{
+			if(lives == 3)
+			{
+				PlaySoundAtEntity("", "24_iron_maiden.snt", "Player", 0.0f, false);
+				GiveSanityDamage(30.0f, true);
+				SetEntityActive("enemy", true);
+				SetEntityPos("enemy", GetPlayerPosX() + 1.0f, GetPlayerPosY(), GetPlayerPosZ());
+				AddTimer("", 10.0f, "StopJumpscare");
+				lives--;
+			}
+			else if(lives == 2)
+			{
+				GiveSanityDamage(5.0f, true);
+				AddTimer("", 5.0f, "DelayJumpscare");
+				lives--;
+			}
+			else
+			{
+				GiveSanityDamage(5.0f, true);
+				AddTimer("", RandFloat(2.0f, 15.0f), "DelayJumpscare");
+			}
+		}
+		else
+		{
+			string firstDigit = StringSub(this.name, 5, 2);
+			int secondDigitStart = 7;
+			string secondDigit = StringSub(this.name, secondDigitStart, 2);
+			if(StringContains(firstDigit, ","))
+			{
+				firstDigit = StringSub(this.name, 5, 1);
+				secondDigitStart = 6;
+				secondDigit = StringSub(this.name, secondDigitStart, 2);
+			}
+			if(StringContains(secondDigit, ";"))
+			{
+				secondDigit = StringSub(this.name, secondDigitStart, 1);
+			}
+			if(StringContains(secondDigit, ","))
+			{
+				secondDigit = StringSub(secondDigit, 1, 1);
+			}
+			
+			int currentRow = StringToInt(firstDigit);
+			int currentColumn = StringToInt(secondDigit);
+			
+			int minesAround = GetMineNeighboursCount(currentRow, currentColumn);
+			
+			CreateEntityAtArea(this.name + "number", minesAround + ".ent", "SpawnArea", false);
+			SetEntityPos(this.name + "number", this.location.x, 0.155f, this.location.z);
+			
+			if(myGrid.GetPlayerWon())
+			{
+				StartCredits("greensleeves.ogg", false, "Credits", "Main", 0);
+			}
+		}
+	}
+}
+
+int GetMineNeighboursCount(int row, int column)
+{
+	int minesAround = 0;
+	
+	if(myGrid.IsFieldMine("field" + (row + 1) + "," + (column) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row - 1) + "," + (column) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row) + "," + (column + 1) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row) + "," + (column - 1) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row - 1) + "," + (column + 1) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row + 1) + "," + (column + 1) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row - 1) + "," + (column - 1) + ";"))
+	{
+		minesAround++;
+	}
+	if(myGrid.IsFieldMine("field" + (row + 1) + "," + (column - 1) + ";"))
+	{
+		minesAround++;
+	}
+	
+	return minesAround;
+}
+
+void FieldPress(string entity)
+{
+	myGrid.ActivateField(entity);
+}
+
+Grid myGrid;
+int lives = 3;
+
+void OnStart()
+{
+	PreloadSound("24_iron_maiden.snt"); PreloadSound("13_amb.snt");
+	PlaySoundAtEntity("Amb", "13_amb.snt", "Player", 0.2f, false);
+}
+
+void OnEnter()
+{
+
+}
+
+void OnLeave()
+{
+
+}
+
+bool RandomBool()
+{
+	int seed = RandInt(1, 4);
+	return (seed == 1) ? true : false;
+}
+
+
+void StartLever(string entity, int state)
+{
+	if(state == -1)
+	{
+		TeleportPlayer("Arena");
+		myGrid = Grid(Point(0.0f, 0.0f), 7, 2.0f);
+		myGrid.PressAllZeros();
+		CheckPoint("", "", "ResetCall", "", "");
+	}
+}
+
+void ResetCall(string name, int count)
+{
+	ChangeMap("reset.map", "PlayerStartArea_1", "", "");
+}
+
+void StopJumpscare(string timer)
+{
+	FadeEnemyToSmoke("enemy", true);
+}
+
+void DelayJumpscare(string timer)
+{
+	PlaySoundAtEntity("", "24_iron_maiden.snt", "Player", 0.0f, false);
+	GiveSanityDamage(30.0f, true);
+	SetEntityActive("enemy", true);
+	SetEntityPos("enemy", GetPlayerPosX() + 1.0f, GetPlayerPosY(), GetPlayerPosZ());
+	AddTimer("", 10.0f, "StopJumpscare");
+}
+
+void NewFlag(string entity)
+{
+	AddTimer("", 10.0f, "DispenceFlag");
+}
+
+int flagCount = 0;
+
+void DispenceFlag(string timer)
+{
+	CreateEntityAtArea("flag" + flagCount, "flag.ent", "SpawnArea", false);
+	SetEntityPlayerInteractCallback("flag" + flagCount, "NewFlag", true);
+	flagCount++;
+}
